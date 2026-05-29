@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# J'ai ton maillot
 
-## Getting Started
+A lightweight community utility to help reconnect misplaced KC jerseys caused by logistical errors (e.g. incorrect shirt shipping or wrong personalization).
 
-First, run the development server:
+## The Concept
+
+Users search for the name (flocage) they were supposed to receive or received incorrectly, and discover if someone else has declared it.
+
+- No complex matching system
+- No social network logic
+- Just a fast, searchable registry
+
+## Tech Stack
+
+- **Frontend**: Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+- **Authentication**: X (Twitter) OAuth 2.0
+
+## Features
+
+- **Instant search** by flocage name
+- **X (Twitter) OAuth login** — one jersey per user
+- **Declare a jersey** you received by mistake
+- **Edit or delete** your declaration
+- **Photo upload** with modal lightbox view
+- **Clickable photos** in search results
+- **Admin moderation** — approve/reject declarations
+- **Basic rate limiting** (10 insertions/minute)
+- **MIT License**
+
+## User Flow
+
+1. **Search**: Enter the flocage on your jersey to find who received it
+2. **Declare**: Log in with X and declare the jersey you received by mistake
+3. **Connect**: Contact the owner via their X profile link
+
+## Setup
+
+### 1. Create a Supabase project
+
+1. Go to [supabase.com](https://supabase.com) and create an account/project
+2. In the SQL Editor, run the contents of `supabase/migrations/001_initial_schema.sql`
+3. Go to Project Settings > API and copy:
+   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
+   - `Publishable` API key → `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+
+### 2. Configure X (Twitter) OAuth
+
+1. In your Supabase dashboard, go to Authentication > Providers
+2. Enable **X / Twitter (OAuth 2.0)**
+3. Add your X API credentials (Client ID and Client Secret)
+4. Set the callback URL in your X Developer app: `https://<your-project>.supabase.co/auth/v1/callback`
+
+### 3. Environment variables
+
+```bash
+cp .env.local.example .env.local
+```
+
+Fill in your Supabase credentials.
+
+### 4. Run the project
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+  app/
+    page.tsx          # Homepage with search
+    declare/page.tsx  # Jersey declaration & edit form
+    admin/page.tsx    # Admin moderation dashboard
+    layout.tsx        # Root layout
+    globals.css       # Global styles
+  components/
+    ui/               # shadcn/ui components
+    auth-button.tsx   # Authentication button
+  hooks/
+    use-auth.ts       # Auth state management
+  lib/
+    supabase.ts       # Supabase client
+    database.types.ts # TypeScript types
+    utils.ts          # Utilities
+supabase/
+  migrations/         # SQL migrations
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Admin Moderation
 
-## Learn More
+To prevent trolls and NSFW content, all declarations require manual approval before appearing in search results.
 
-To learn more about Next.js, take a look at the following resources:
+### How it works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Users submit a declaration
+2. The declaration is marked as `approved = false` (pending)
+3. Admins review pending declarations at `/admin`
+4. Approved declarations appear in search results; rejected ones are deleted
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Setup admin access
 
-## Deploy on Vercel
+1. Log in to the app with your X account (to create your user record)
+2. Get your user ID from the Supabase dashboard (Auth > Users)
+3. Run this SQL in the Supabase SQL Editor:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sql
+INSERT INTO public.admins (user_id)
+VALUES ('your-user-id-here');
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. Visit `/admin` to access the moderation dashboard
+
+### Admin features
+
+- View all pending declarations
+- Approve: Makes the jersey visible in search results
+- Reject: Permanently deletes the declaration
+- See submission date, flocage, size, photo, and Twitter handle
+
+## License
+
+MIT License — see [LICENSE](LICENSE) file.
